@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Séance</title>
+<meta name="theme-color" content="#0F1416">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Séance">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230F1416'/%3E%3Crect x='30' y='80' width='120' height='16' rx='6' fill='%23E9B23C'/%3E%3Crect x='18' y='62' width='18' height='52' rx='5' fill='%23E9B23C'/%3E%3Crect x='144' y='62' width='18' height='52' rx='5' fill='%23E9B23C'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#0F1416; --surface:#192024; --line:#2B353B;
+    --paper:#F2EFE9; --muted:#8DA0A8; --effort:#E9B23C; --rest:#46D6AE;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--paper);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  body{min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);transition:background .4s;}
+  body.repos{background:#0C1614;}
+  #app{max-width:520px;margin:0 auto;position:relative;}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  a{color:var(--effort);}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+  .btn{width:100%;padding:18px 20px;border-radius:14px;font-size:17px;font-weight:700;background:var(--effort);color:var(--ink);}
+  .btn.rest{background:var(--rest);}
+  .btn.ghost{background:transparent;color:var(--paper);border:1.5px solid var(--line);}
+  .btn:active{opacity:.75;}
+  .card{width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:14px;display:block;color:var(--paper);}
+  .letter{font-family:var(--mono);font-size:52px;line-height:.9;color:var(--effort);font-weight:700;}
+  h1{font-size:34px;font-weight:800;letter-spacing:-.03em;margin:10px 0 4px;}
+  h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;}
+  .row{display:flex;gap:14px;padding:16px 20px;border-top:1px solid var(--line);width:100%;text-align:left;align-items:flex-start;}
+  .row:active{background:var(--surface);}
+  .time{font-family:var(--mono);font-size:13px;color:var(--effort);min-width:76px;padding-top:2px;}
+  .time.warm{color:var(--muted);}
+  .meta{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:5px;}
+  .sticky{position:fixed;left:0;right:0;bottom:0;padding:14px 20px calc(22px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--ink) 68%,transparent);}
+  .sticky .inner{max-width:520px;margin:0 auto;}
+  .bar{height:3px;background:var(--line);border-radius:2px;margin-top:14px;overflow:hidden;}
+  .bar > div{height:100%;background:var(--effort);transition:width .3s;}
+  .bar.rest > div{background:var(--rest);}
+  .timer{font-family:var(--mono);font-weight:700;letter-spacing:-.04em;line-height:1;}
+  .screen{min-height:100vh;display:flex;flex-direction:column;}
+  .pad{padding:26px 24px 0;}
+  .art{flex:1;display:flex;align-items:center;justify-content:center;min-height:150px;margin:6px 0;}
+  .art svg{width:100%;max-width:300px;}
+  .cue{font-size:15.5px;color:var(--muted);line-height:1.55;margin:0 0 12px;}
+  .vid{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;display:inline-block;margin-bottom:18px;}
+  .duo{display:flex;gap:10px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============================ SCHÉMAS ============================ */
+const P='stroke="#F2EFE9" stroke-width="3.2" stroke-linecap="round" fill="none"';
+const A='stroke="var(--acc)" stroke-width="4" stroke-linecap="round" fill="none"';
+const FLOOR='<line x1="14" y1="134" x2="186" y2="134" stroke="#2B353B" stroke-width="2"/>';
+const BENCHBAR='fill="#192024" stroke="#2B353B" stroke-width="2"';
+const hd=(x,y)=>`<circle cx="${x}" cy="${y}" r="8.5" ${P}/>`;
+const pl=(x,y)=>`<rect x="${x}" y="${y}" width="7" height="24" rx="2" fill="var(--acc)"/>`;
+
+const ART={
+velo:`${FLOOR}<circle cx="62" cy="112" r="20" ${P}/><circle cx="142" cy="112" r="20" ${P}/><path d="M62 112 L104 112 L120 74 L142 112" ${P}/><path d="M104 112 L92 70" ${A}/><line x1="80" y1="66" x2="104" y2="66" ${A}/>`,
+squat:`${FLOOR}<line x1="86" y1="134" x2="114" y2="134" ${P}/><path d="M100 134 L114 102 L82 100 L96 66" ${P}/>${hd(102,54)}<line x1="70" y1="64" x2="128" y2="64" ${A}/>${pl(66,52)}${pl(127,52)}<path d="M150 106 L150 74 M144 82 L150 74 L156 82" ${A}/>`,
+goblet:`${FLOOR}<line x1="86" y1="134" x2="114" y2="134" ${P}/><path d="M100 134 L112 104 L84 102 L96 70" ${P}/>${hd(100,58)}<rect x="86" y="76" width="20" height="16" rx="3" fill="var(--acc)"/><path d="M96 74 L88 84 M96 74 L108 84" ${P}/>`,
+bench:`${FLOOR}<rect x="48" y="104" width="106" height="8" rx="3" ${BENCHBAR}/><line x1="80" y1="126" x2="80" y2="112" stroke="#2B353B" stroke-width="3"/><line x1="132" y1="126" x2="132" y2="112" stroke="#2B353B" stroke-width="3"/><path d="M62 122 L74 104 L124 100" ${P}/>${hd(134,98)}<path d="M104 101 L102 78" ${P}/><line x1="80" y1="76" x2="128" y2="76" ${A}/>${pl(76,64)}${pl(127,64)}`,
+row:`${FLOOR}<rect x="36" y="100" width="66" height="8" rx="3" ${BENCHBAR}/><path d="M78 86 L128 84 L132 134" ${P}/>${hd(66,84)}<line x1="82" y1="88" x2="80" y2="100" ${P}/><path d="M118 88 L126 106" ${P}/><rect x="118" y="104" width="18" height="9" rx="3" fill="var(--acc)"/><path d="M158 112 L158 82 M152 90 L158 82 L164 90" ${A}/>`,
+split:`${FLOOR}<rect x="120" y="100" width="52" height="8" rx="3" ${BENCHBAR}/><line x1="60" y1="134" x2="84" y2="134" ${P}/><path d="M72 134 L74 104 L98 104" ${P}/><path d="M98 104 L124 100" ${P}/><path d="M98 104 L96 70" ${P}/>${hd(98,58)}<rect x="78" y="72" width="9" height="20" rx="3" fill="var(--acc)"/><rect x="110" y="72" width="9" height="20" rx="3" fill="var(--acc)"/>`,
+lateral:`${FLOOR}<line x1="94" y1="134" x2="108" y2="134" ${P}/><path d="M100 134 L100 74" ${P}/>${hd(100,60)}<line x1="66" y1="80" x2="134" y2="80" ${P}/><rect x="52" y="72" width="16" height="9" rx="3" fill="var(--acc)"/><rect x="132" y="72" width="16" height="9" rx="3" fill="var(--acc)"/><path d="M60 62 L60 48 M55 54 L60 48 L65 54" ${A}/><path d="M140 62 L140 48 M135 54 L140 48 L145 54" ${A}/>`,
+triceps:`${FLOOR}<line x1="94" y1="134" x2="108" y2="134" ${P}/><path d="M100 134 L100 76" ${P}/>${hd(100,62)}<path d="M100 80 L112 96 L112 112" ${P}/><line x1="98" y1="112" x2="126" y2="112" ${A}/><path d="M112 96 L112 40" stroke="#2B353B" stroke-width="2.5"/><path d="M146 96 L146 116 M140 108 L146 116 L152 108" ${A}/>`,
+carry:`${FLOOR}<line x1="88" y1="134" x2="112" y2="134" ${P}/><path d="M100 134 L100 76" ${P}/>${hd(100,62)}<line x1="76" y1="80" x2="124" y2="80" ${P}/><path d="M124 80 L128 108" ${P}/><rect x="118" y="106" width="20" height="10" rx="3" fill="var(--acc)"/><path d="M60 96 L44 96 M52 90 L44 96 L52 102" ${A}/>`,
+rdl:`${FLOOR}<line x1="92" y1="134" x2="116" y2="134" ${P}/><path d="M104 134 L108 96 L74 88" ${P}/>${hd(62,86)}<path d="M84 90 L84 110" ${P}/><line x1="66" y1="112" x2="106" y2="112" ${A}/>${pl(62,100)}${pl(105,100)}<path d="M138 74 L152 74 M146 68 L152 74 L146 80" ${A}/>`,
+pulldown:`${FLOOR}<line x1="88" y1="134" x2="112" y2="134" ${P}/><path d="M100 134 L100 82" ${P}/>${hd(100,68)}<path d="M100 86 L78 70 M100 86 L122 70" ${P}/><line x1="70" y1="62" x2="130" y2="62" ${A}/><path d="M100 62 L100 24" stroke="#2B353B" stroke-width="2.5"/><path d="M150 60 L150 88 M144 80 L150 88 L156 80" ${A}/>`,
+press:`${FLOOR}<line x1="90" y1="134" x2="112" y2="134" ${P}/><path d="M100 134 L100 80" ${P}/>${hd(100,66)}<path d="M100 82 L82 66 L82 52 M100 82 L118 66 L118 52" ${P}/><rect x="70" y="44" width="24" height="10" rx="3" fill="var(--acc)"/><rect x="106" y="44" width="24" height="10" rx="3" fill="var(--acc)"/><path d="M148 62 L148 34 M142 42 L148 34 L154 42" ${A}/>`,
+hipthrust:`${FLOOR}<rect x="30" y="86" width="46" height="8" rx="3" ${BENCHBAR}/><path d="M62 90 L112 84 L128 112 L128 134" ${P}/>${hd(50,86)}<line x1="96" y1="80" x2="130" y2="80" ${A}/>${pl(92,68)}${pl(129,68)}<path d="M112 56 L112 40 M106 48 L112 40 L118 48" ${A}/>`,
+curl:`${FLOOR}<line x1="90" y1="134" x2="112" y2="134" ${P}/><path d="M100 134 L100 78" ${P}/>${hd(100,64)}<path d="M100 82 L84 100 L104 92" ${P}/><rect x="98" y="86" width="20" height="10" rx="3" fill="var(--acc)"/><path d="M144 108 L144 78 M138 86 L144 78 L150 86" ${A}/>`,
+facepull:`${FLOOR}<line x1="90" y1="134" x2="112" y2="134" ${P}/><path d="M100 134 L100 80" ${P}/>${hd(100,66)}<path d="M100 84 L76 72 M100 84 L124 72" ${P}/><line x1="66" y1="70" x2="134" y2="70" ${A}/><path d="M134 70 L172 62" stroke="#2B353B" stroke-width="2.5"/><path d="M60 96 L44 96 M52 90 L44 96 L52 102" ${A}/>`,
+pallof:`${FLOOR}<line x1="88" y1="134" x2="112" y2="134" ${P}/><path d="M100 134 L100 78" ${P}/>${hd(100,64)}<path d="M100 82 L128 82" ${P}/><rect x="126" y="76" width="12" height="12" rx="3" fill="var(--acc)"/><path d="M138 82 L178 82" stroke="#2B353B" stroke-width="2.5"/><path d="M62 82 L44 82 M52 76 L44 82 L52 88" ${A}/>`,
+crunch:`${FLOOR}<path d="M84 134 L86 108 L104 96" ${P}/>${hd(112,88)}<path d="M104 96 L120 74" ${P}/><path d="M120 74 L120 40" stroke="#2B353B" stroke-width="2.5"/><line x1="108" y1="72" x2="132" y2="72" ${A}/><path d="M148 74 L148 104 M142 96 L148 104 L154 96" ${A}/>`
+};
+const svg=(id,acc)=>`<svg viewBox="0 0 200 150" style="--acc:${acc||'#E9B23C'}" aria-hidden="true">${ART[id]||ART.squat}</svg>`;
+
+/* ============================ PROGRAMMES ============================ */
+const PROGRAMS={
+A:{letter:"A",title:"Poussée / quadriceps",blocks:[
+ {id:"e1",name:"Échauffement général",art:"velo",timed:240,sets:1,est:240,rest:0,warm:1,detail:"Vélo ou rameur léger, puis mobilité hanches et épaules."},
+ {id:"r1",name:"Montée en charge — squat",art:"goblet",timed:360,sets:1,est:360,rest:0,warm:1,detail:"2 goblet squats légers, barre à vide × 8, puis 50 % × 5, 70 % × 3, 85 % × 1."},
+ {id:"sq",name:"Squat barre",art:"squat",sets:3,reps:"5 à 8",est:50,rest:180,core:1,detail:"Dans la cage, barres de sécurité réglées. Reste à 2-3 reps de la limite."},
+ {id:"r2",name:"Montée en charge — développé couché",art:"bench",timed:180,sets:1,est:180,rest:0,warm:1,detail:"Barre à vide × 10, puis 2 séries légères."},
+ {id:"bp",name:"Développé couché barre",art:"bench",sets:3,reps:"5 à 8",est:45,rest:150,core:1,detail:"Pareur ou barres de sécurité. Jamais seul avec les colliers serrés."},
+ {id:"rw",name:"Rowing haltère un bras",art:"row",sets:3,reps:"8 à 12 par bras",est:60,rest:120,core:1,detail:"Un genou et une main sur le banc. Tire vers la hanche, pas vers l'épaule."},
+ {id:"ssa",name:"Superset",art:"split",sets:2,rest:90,est:90,pair:[
+   {name:"Split squat bulgare",art:"split",reps:"8 par jambe",detail:"Pied arrière sur le banc, le poids reste sur la jambe avant."},
+   {name:"Élévations latérales",art:"lateral",reps:"12 à 15",detail:"Léger. Monte jusqu'à hauteur d'épaules, pas plus haut."}]},
+ {id:"tr",name:"Extensions triceps",art:"triceps",sets:3,reps:"10 à 15",est:40,rest:75,detail:"Coudes collés au corps, seul l'avant-bras bouge."},
+ {id:"ca",name:"Portage valise",art:"carry",sets:3,reps:"30 à 40 m",est:45,rest:60,detail:"Un seul haltère lourd, une main. Reste bien droit, ne penche pas."}]},
+B:{letter:"B",title:"Tirage / chaîne postérieure",blocks:[
+ {id:"e2",name:"Échauffement général",art:"velo",timed:240,sets:1,est:240,rest:0,warm:1,detail:"Vélo ou rameur léger, puis mobilité hanches et épaules."},
+ {id:"r3",name:"Montée en charge — soulevé roumain",art:"rdl",timed:300,sets:1,est:300,rest:0,warm:1,detail:"Barre à vide × 10 pour sentir la charnière, puis 2 montées en charge."},
+ {id:"rd",name:"Soulevé de terre roumain",art:"rdl",sets:3,reps:"8 à 10",est:50,rest:150,core:1,detail:"Fesses vers l'arrière, dos plat, jambes presque tendues. Ce n'est pas un squat."},
+ {id:"pd",name:"Tractions ou tirage vertical",art:"pulldown",sets:3,reps:"6 à 10",est:45,rest:120,core:1,detail:"Si les tractions ne passent pas, la machine fait le même travail."},
+ {id:"mp",name:"Développé militaire haltères",art:"press",sets:3,reps:"8 à 10",est:45,rest:120,detail:"Assis ou debout, côtes basses, ne cambre pas le bas du dos."},
+ {id:"ht",name:"Hip thrust",art:"hipthrust",sets:3,reps:"10 à 12",est:45,rest:120,core:1,detail:"Haut du dos sur le banc. Serre les fessiers en haut, une seconde."},
+ {id:"ssb1",name:"Superset",art:"curl",sets:3,rest:75,est:70,pair:[
+   {name:"Curl biceps",art:"curl",reps:"10 à 15",detail:"Machine, poulie ou haltères. Pas d'élan avec le dos."},
+   {name:"Face pull",art:"facepull",reps:"15",detail:"Tire la corde vers le visage, coudes hauts et écartés."}]},
+ {id:"ssb2",name:"Superset",art:"pallof",sets:3,rest:60,est:80,pair:[
+   {name:"Pallof press",art:"pallof",reps:"10 par côté",detail:"De côté par rapport à la poulie. Tends les bras et résiste à la rotation."},
+   {name:"Crunch à la poulie",art:"crunch",reps:"10 à 15",detail:"À genoux, enroule le tronc. C'est le ventre qui travaille, pas les bras."}]}]}
+};
+
+/* ============================ OUTILS ============================ */
+const mmss=s=>Math.floor(s/60)+":"+String(Math.round(s%60)).padStart(2,"0");
+const mins=s=>Math.round(s/60)+" min";
+const blocksOf=(k,short)=>PROGRAMS[k].blocks.filter(b=>!short||b.warm||b.core);
+function timeline(bs){let t=0;return bs.map(b=>{const d=b.sets*(b.est+b.rest);const r={b,from:t,to:t+d};t+=d;return r;});}
+function stepsOf(bs){const out=[];bs.forEach((b,bi)=>{for(let s=1;s<=b.sets;s++){
+  if(b.pair)b.pair.forEach((ex,i)=>out.push({type:"work",b,bi,ex,set:s,part:i+1}));
+  else out.push({type:"work",b,bi,ex:b,set:s});
+  const last=(bi===bs.length-1&&s===b.sets);
+  if(!last&&b.rest>0)out.push({type:"rest",sec:b.rest,b,bi,set:s});}});return out;}
+
+/* --- audio : un seul contexte, ouvert au premier toucher ---
+   Plus de piste de fond permanente : le repos démarre toujours sur un appui
+   de ta part, ce qui suffit à autoriser la lecture. Rien ne joue entre les
+   séries, donc plus de souffle continu. */
+let AC=null;
+
+function audioOn(){
+  try{
+    if(!AC){const C=window.AudioContext||window.webkitAudioContext;AC=new C();}
+    if(AC.state==="suspended")AC.resume();
+  }catch(e){}
+}
+function audioOff(){ cancelCue(); }
+
+/* --- LA PIÈCE MAÎTRESSE ---------------------------------------------
+   On fabrique un fichier audio de la durée exacte du repos : du silence,
+   puis trois bips à la toute fin. On le lance au début du repos et le
+   système le joue jusqu'au bout — même écran verrouillé, même si le
+   JavaScript est gelé. Le son n'a plus besoin d'être déclenché à temps.
+   PCM 16 bits : silence numérique parfait, aucun artefact.
+---------------------------------------------------------------------*/
+let cue=null, cueURL=null, cued=false;
+
+/* Deux modes, incompatibles entre eux (contrainte du système, pas du code) :
+   - "mix"  : le bip se superpose, la musique continue, mais rien écran verrouillé
+   - "lock" : la piste préparée sonne écran verrouillé, mais met la musique en pause */
+function mixMode(){ return S.audioMode==="mix"; }
+
+function beepNow(){                    /* trois bips par-dessus tout le reste */
+  try{
+    if(!AC){const C=window.AudioContext||window.webkitAudioContext;AC=new C({latencyHint:"interactive"});}
+    if(AC.state==="suspended")AC.resume();
+    const t0=AC.currentTime;
+    [0,.22,.44].forEach(d=>{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.connect(g);g.connect(AC.destination);o.type="sine";o.frequency.value=880;
+      g.gain.setValueAtTime(.0001,t0+d);
+      g.gain.exponentialRampToValueAtTime(.35,t0+d+.012);
+      g.gain.exponentialRampToValueAtTime(.0001,t0+d+.15);
+      o.start(t0+d);o.stop(t0+d+.17);
+    });
+  }catch(e){}
+}
+
+function makeCue(sec){
+  const rate=8000, tail=1.2, n=Math.round(rate*(sec+tail)), bytes=n*2;
+  const buf=new ArrayBuffer(44+bytes), v=new DataView(buf);
+  const str=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  str(0,"RIFF");v.setUint32(4,36+bytes,true);str(8,"WAVEfmt ");v.setUint32(16,16,true);
+  v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);
+  v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+  str(36,"data");v.setUint32(40,bytes,true);
+  /* tout est déjà à zéro = silence absolu en 16 bits signé */
+  [0,.22,.44].forEach(off=>{
+    const start=Math.round(rate*(sec+off)), len=Math.round(rate*.15);
+    for(let i=0;i<len;i++){
+      const p=start+i; if(p>=n) break;
+      const fade=Math.min(1,i/150,(len-i)/150);
+      v.setInt16(44+p*2, Math.round(11000*fade*Math.sin(2*Math.PI*880*i/rate)), true);
+    }
+  });
+  return URL.createObjectURL(new Blob([buf],{type:"audio/wav"}));
+}
+
+function scheduleCue(sec){
+  cancelCue();
+  if(!S.sound||mixMode()||sec<3||sec>600) return;   /* en mode mixage : rien à préparer */
+  try{
+    cueURL=makeCue(sec);
+    cue=new Audio(cueURL);
+    cue.setAttribute("playsinline","");
+    cue.volume=1;
+    cue.play().then(()=>{cued=true;}).catch(()=>{cued=false;});
+  }catch(e){cued=false;}
+}
+function cancelCue(){
+  try{ if(cue){cue.pause();cue=null;} }catch(e){}
+  if(cueURL){URL.revokeObjectURL(cueURL);cueURL=null;}
+  cued=false;
+}
+
+/* ============================ ÉTAT ============================ */
+const S={view:"home",prog:"A",short:false,i:0,left:0,until:null,running:true,
+         elapsed:0,startedAt:0,sound:true,audioMode:"mix",steps:[],done:false,wake:null};
+try{ const m=localStorage.getItem("audioMode"); if(m)S.audioMode=m; }catch(e){}
+
+/* Le repos est ancré sur une heure de fin réelle : même si le téléphone
+   s'endort, l'affichage est juste dès qu'on le rallume. */
+function startCount(sec,withCue){S.left=sec;S.until=Date.now()+sec*1000;S.running=true;if(withCue)scheduleCue(sec);}
+function stopCount(){S.left=0;S.until=null;cancelCue();}
+function readCount(){ if(S.running&&S.until!==null) S.left=Math.max(0,Math.ceil((S.until-Date.now())/1000)); }
+const app=document.getElementById("app");
+
+async function keepAwake(on){
+  try{
+    if(on&&"wakeLock"in navigator&&!S.wake){S.wake=await navigator.wakeLock.request("screen");}
+    else if(!on&&S.wake){S.wake.release();S.wake=null;}
+  }catch(e){}
+}
+
+/* ============================ VUES ============================ */
+function home(){
+  const card=k=>{const p=PROGRAMS[k],bs=blocksOf(k,S.short),t=timeline(bs).slice(-1)[0].to;
+    return `<button class="card" data-go="${k}">
+      <div style="display:flex;align-items:baseline;gap:14px">
+        <span class="letter">${p.letter}</span>
+        <span style="font-size:18px;font-weight:700;letter-spacing:-.01em">${p.title}</span>
+      </div>
+      <div class="eyebrow" style="margin-top:14px;letter-spacing:.08em">${mins(t)} · ${bs.filter(b=>!b.warm).length} exercices</div>
+    </button>`;};
+  app.innerHTML=`<div style="padding:40px 20px 40px">
+    <div class="eyebrow" style="letter-spacing:.22em">Full-body · 2 séances en alternance</div>
+    <h1>Quelle séance aujourd'hui ?</h1>
+    <p style="font-size:15px;color:var(--muted);line-height:1.5;margin:0 0 26px">Tu alternes A, B, A, B. Peu importe le rythme.</p>
+    ${card("A")}${card("B")}
+    <button id="short" style="width:100%;margin-top:10px;padding:16px 18px;border-radius:14px;text-align:left;
+      background:${S.short?"var(--effort)":"transparent"};border:1.5px solid ${S.short?"var(--effort)":"var(--line)"};
+      color:${S.short?"var(--ink)":"var(--paper)"}">
+      <div style="font-weight:700;font-size:16px">Mode nuits courtes${S.short?" · activé":""}</div>
+      <div style="font-size:13.5px;margin-top:4px;opacity:.8;line-height:1.45">Échauffement + les 3 gros mouvements. Environ 30 minutes, jamais à l'échec.</div>
+    </button>
+
+    <div style="margin-top:22px;padding-top:22px;border-top:1px solid var(--line)">
+      <div class="eyebrow" style="letter-spacing:.14em">Son du minuteur</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="mode" data-mode="mix" style="flex:1;padding:14px 12px;border-radius:12px;text-align:left;
+          background:${S.audioMode==="mix"?"var(--effort)":"transparent"};
+          border:1.5px solid ${S.audioMode==="mix"?"var(--effort)":"var(--line)"};
+          color:${S.audioMode==="mix"?"var(--ink)":"var(--paper)"}">
+          <div style="font-weight:700;font-size:14.5px">Par-dessus la musique</div>
+          <div style="font-size:12px;margin-top:3px;opacity:.75;line-height:1.4">Ton podcast continue. Écran allumé requis.</div>
+        </button>
+        <button class="mode" data-mode="lock" style="flex:1;padding:14px 12px;border-radius:12px;text-align:left;
+          background:${S.audioMode==="lock"?"var(--effort)":"transparent"};
+          border:1.5px solid ${S.audioMode==="lock"?"var(--effort)":"var(--line)"};
+          color:${S.audioMode==="lock"?"var(--ink)":"var(--paper)"}">
+          <div style="font-weight:700;font-size:14.5px">Écran verrouillé</div>
+          <div style="font-size:12px;margin-top:3px;opacity:.75;line-height:1.4">Sonne en poche. Met la musique en pause.</div>
+        </button>
+      </div>
+    </div></div>`;
+  app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{S.prog=b.dataset.go;S.view="overview";render();});
+  document.getElementById("short").onclick=()=>{S.short=!S.short;render();};
+  app.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{
+    S.audioMode=b.dataset.mode;
+    try{localStorage.setItem("audioMode",S.audioMode);}catch(e){}
+    render();});
+}
+
+function overview(){
+  const p=PROGRAMS[S.prog],bs=blocksOf(S.prog,S.short),rows=timeline(bs),tot=rows.slice(-1)[0].to;
+  app.innerHTML=`<div style="padding-bottom:110px">
+    <div style="padding:22px 20px 0">
+      <button id="back" class="eyebrow" style="letter-spacing:.12em;padding:0">← Retour</button>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-top:16px">
+        <span class="letter" style="font-size:44px">${p.letter}</span><h2>${p.title}</h2></div>
+      <div class="eyebrow" style="letter-spacing:.08em;margin-top:8px">${mins(tot)}${S.short?" · mode nuits courtes":""}</div>
+      <p style="font-size:14px;color:var(--muted);line-height:1.5;margin:14px 0 0">Touche un exercice pour démarrer là. Sinon, le bouton en bas part du début.</p>
+    </div>
+    <div style="margin-top:26px">
+    ${rows.map((r,ri)=>{const b=r.b;return `<button class="row" data-jump="${ri}">
+      <div class="time ${b.warm?"warm":""}">${mmss(r.from)}–${mmss(r.to)}</div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:700;letter-spacing:-.01em;color:${b.warm?"var(--muted)":"var(--paper)"}">
+          ${b.pair?b.pair.map(e=>e.name).join("  +  "):b.name}</div>
+        <div class="meta">${b.pair?b.sets+" tours · "+b.pair.map(e=>e.reps).join(" / ")+" · repos "+mmss(b.rest)
+          :b.timed?mins(b.timed):b.sets+" × "+b.reps+" · repos "+mmss(b.rest)}</div>
+      </div>
+      <div style="width:52px;height:40px;opacity:${b.warm?.4:.85}">${svg(b.art)}</div></button>`;}).join("")}
+    <div style="border-top:1px solid var(--line)"></div></div></div>
+    <div class="sticky"><div class="inner"><button class="btn" id="start">Commencer la séance</button></div></div>`;
+  document.getElementById("back").onclick=()=>{S.view="home";render();};
+  const launch=(fromBlock)=>{
+    S.steps=stepsOf(bs);
+    const at=S.steps.findIndex(s=>s.type==="work"&&s.bi===fromBlock);
+    S.i=at<0?0:at;
+    S.startedAt=Date.now();S.elapsed=0;S.done=false;S.view="session";
+    audioOn();keepAwake(true);enter();render();
+  };
+  document.getElementById("start").onclick=()=>launch(0);
+  app.querySelectorAll("[data-jump]").forEach(el=>el.onclick=()=>launch(+el.dataset.jump));
+}
+
+function enter(){
+  const st=S.steps[S.i];if(!st)return;
+  if(st.type==="rest")startCount(st.sec,true);
+  else if(st.b.timed)startCount(st.b.timed,true);
+  else stopCount();
+}
+function next(){ cancelCue(); if(S.i+1>=S.steps.length){S.done=true;keepAwake(false);audioOff();} else {S.i++;enter();} render(); }
+
+function session(){
+  document.body.classList.toggle("repos",S.steps[S.i]&&S.steps[S.i].type==="rest"&&!S.done);
+  if(S.done){
+    const nx=PROGRAMS[S.prog].letter==="A"?"B":"A";
+    app.innerHTML=`<div style="padding:80px 24px;text-align:center">
+      <div class="eyebrow" style="color:var(--rest);letter-spacing:.22em">Séance ${PROGRAMS[S.prog].letter} terminée</div>
+      <div class="timer" style="font-size:64px;margin:18px 0 6px">${mmss(S.elapsed)}</div>
+      <p style="color:var(--muted);font-size:15px;line-height:1.55;margin:0 0 34px">Prochaine fois : séance ${nx}.</p>
+      <button class="btn rest" id="home">Retour à l'accueil</button></div>`;
+    document.getElementById("home").onclick=()=>{S.view="home";document.body.classList.remove("repos");render();};
+    return;
+  }
+  const st=S.steps[S.i],rest=st.type==="rest";
+  const pct=(S.i/(S.steps.length-1))*100;
+  const acc=rest?"#46D6AE":"#E9B23C";
+  const top=`<div style="padding:18px 20px 0">
+    <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em">
+      <button id="quit" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em;padding:0">QUITTER</button>
+      <span>${mmss(S.elapsed)}</span>
+      <button id="snd" style="font-family:var(--mono);font-size:12px;color:${S.sound?"var(--paper)":"var(--muted)"};letter-spacing:.08em;padding:0">${S.sound?(mixMode()?"SON · MIX":"SON · VERROU"):"SON OFF"}</button>
+    </div>
+    <div class="bar ${rest?"rest":""}"><div style="width:${pct}%"></div></div></div>`;
+
+  if(rest){
+    const up=S.steps.slice(S.i+1).find(s=>s.type==="work");
+    app.innerHTML=`<div class="screen">${top}
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;text-align:center">
+        <div class="eyebrow" style="color:var(--rest);letter-spacing:.24em">Repos</div>
+        <div class="timer" style="font-size:92px;margin:14px 0 8px">${mmss(S.left)}</div>
+        ${up?`<div style="font-size:15px;color:var(--muted);line-height:1.5">Ensuite — <span style="color:var(--paper);font-weight:700">${up.ex.name}</span><br>série ${up.set} · ${up.ex.reps||""}</div>`:""}
+        <div class="duo" style="margin-top:34px">
+          <button class="btn ghost" id="add">+30 s</button>
+          <button class="btn ghost" id="pause">${S.running?"Pause":"Reprendre"}</button></div>
+        <div style="margin-top:10px"><button class="btn rest" id="skip">Passer le repos</button></div>
+      </div></div>`;
+    document.getElementById("add").onclick=()=>{
+      S.left+=30; if(S.running&&S.until!==null)S.until+=30000;
+      if(S.running)scheduleCue(S.left); render();};
+    document.getElementById("pause").onclick=()=>{
+      if(S.running){readCount();S.running=false;S.until=null;cancelCue();}
+      else{S.running=true;S.until=Date.now()+S.left*1000;scheduleCue(S.left);}
+      render();};
+    document.getElementById("skip").onclick=next;
+  } else {
+    const works=S.steps.slice(0,S.i+1).filter(s=>s.type==="work").length;
+    const tot=S.steps.filter(s=>s.type==="work").length;
+    const label=st.b.timed?"Échauffement terminé":(st.part===1?"Terminé — enchaîner":"Série terminée");
+    app.innerHTML=`<div class="screen">${top}
+      <div class="pad" style="flex:1;display:flex;flex-direction:column">
+        <div class="eyebrow" style="color:var(--effort)">${st.b.warm?"Échauffement":"Exercice "+works+" / "+tot}${st.part?" · superset "+st.part+"/2":""}</div>
+        <h2 style="font-size:30px;margin:10px 0 0;line-height:1.1">${st.ex.name}</h2>
+        <div style="display:flex;align-items:baseline;gap:16px;margin-top:14px;flex-wrap:wrap">
+          ${st.b.timed?`<span class="timer" style="font-size:46px;color:var(--effort)">${mmss(S.left)}</span>`
+          :`<span style="font-family:var(--mono);font-size:15px;color:var(--muted)">Série <span style="color:var(--paper);font-size:22px;font-weight:700">${st.set}</span> / ${st.b.sets}</span>
+            <span style="font-family:var(--mono);font-size:22px;color:var(--effort);font-weight:700">${st.ex.reps} reps</span>`}
+        </div>
+        <div class="art">${svg(st.ex.art||st.b.art,acc)}</div>
+        <p class="cue">${st.ex.detail||st.b.detail}</p>
+        <a class="vid" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(st.ex.name+" technique musculation")}">Voir la technique en vidéo ↗</a>
+        <div style="padding-bottom:calc(22px + env(safe-area-inset-bottom))"><button class="btn" id="donebtn">${label}</button></div>
+      </div></div>`;
+    document.getElementById("donebtn").onclick=next;
+  }
+  document.getElementById("quit").onclick=()=>{S.view="home";keepAwake(false);document.body.classList.remove("repos");render();};
+  document.getElementById("snd").onclick=()=>{S.sound=!S.sound;render();};
+}
+
+function render(){ ({home,overview,session})[S.view](); }
+
+/* ============================ HORLOGE ============================ */
+let shown="",rang=-1;
+setInterval(()=>{
+  if(S.view!=="session"||S.done)return;
+  S.elapsed=Math.floor((Date.now()-S.startedAt)/1000);
+  const before=S.left;
+  readCount();
+  const st=S.steps[S.i];
+  if(before>0&&S.left===0&&rang!==S.i){
+    rang=S.i;
+    if(S.sound&&!cued)beepNow();
+    if(navigator.vibrate)navigator.vibrate([160,90,160,90,160]);
+    if(st&&st.type==="rest"){setTimeout(next,700);return;}
+  }
+  const now=S.elapsed+"|"+S.left;
+  if(now!==shown){shown=now;render();}
+},250);
+
+/* au retour d'écran verrouillé, on resynchronise tout de suite */
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden&&S.view==="session"&&!S.done){
+    S.elapsed=Math.floor((Date.now()-S.startedAt)/1000);readCount();render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
